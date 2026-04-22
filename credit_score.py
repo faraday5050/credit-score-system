@@ -355,17 +355,22 @@ def prepare_input(data_dict, feature_columns):
         if col not in df.columns:
             df[col] = 0
     
-    # Reorder columns to match training
+    # Reorder columns to match training EXACTLY
     df = df[feature_columns]
     
-    # Apply scaling
+    # Apply scaling - BUT only to columns the scaler expects
     if artifacts and artifacts['scaler']:
-        # Identify numerical columns for scaling
-        numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns
-        df[numerical_cols] = artifacts['scaler'].transform(df[numerical_cols])
+        # Get the exact columns the scaler was trained on
+        scaler_columns = artifacts['scaler'].feature_names_in_
+        
+        # Only scale columns that exist in the scaler
+        cols_to_scale = [col for col in scaler_columns if col in df.columns and df[col].dtype in ['int64', 'float64']]
+        
+        # Scale in the correct order
+        if cols_to_scale:
+            df[cols_to_scale] = artifacts['scaler'].transform(df[cols_to_scale])
     
     return df
-
 # =============================================================================
 # MAIN APP INTERFACE (YOUR ORIGINAL - WITH BVN ADDED IN SIDEBAR ONLY)
 # =============================================================================
